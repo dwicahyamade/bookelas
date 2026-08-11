@@ -1,53 +1,94 @@
-import { apiGet, apiSend } from "@/lib/http";
-import type { Booking, BookingStatus, Class, PublicSession, SessionStatus, Studio } from "@/lib/types";
+"use server";
 
-export interface ApprovalRow extends Booking { session: PublicSession; }
-export interface CreateSessionInput { class_id: string; start_time: string; end_time: string; }
-export interface ClassInput { title: string; description: string; capacity: number; price: number; }
-export interface DashboardMetrics {
-  pendingCount: number; approvedTodayCount: number; sessionsTodayCount: number;
-  nextSession: PublicSession | null; totalCapacity: number; totalApproved: number;
-}
-export interface BookingNotifyResult { email: "sent" | "skipped" | "error"; wa: "stubbed"; warnings: string[]; }
-export type ApprovalResult = ApprovalRow & { notify: BookingNotifyResult };
-export type ClassWithCount = Class & { session_count: number };
+import { assertAdmin } from "@/lib/server/auth";
+import {
+  approveBookingRpc, buildApprovalRow, createClassRow, createSessionRow, dashboardMetrics,
+  getApproval, getProofSignedUrl, getStudio as loadStudio, listApprovalsDetailed as loadApprovals,
+  listClassesWithCount, listSessionsByDate as loadSessions, rejectBooking, updateClassRow, updateStudioRow,
+} from "@/lib/server/data";
+import { notifyBookingConfirmed } from "@/lib/server/notify";
+import { ApiError } from "@/lib/errors";
+import type { BookingStatus } from "@/lib/types";
+import type {
+  ApprovalResult, ApprovalRow, ClassInput, CreateSessionInput, DashboardMetrics,
+} from "@/lib/api/types";
+import type { Class, PublicSession, Studio } from "@/lib/types";
 
-export async function listApprovals(status?: BookingStatus): Promise<Booking[]> {
-  return apiGet<ApprovalRow[]>(`/api/admin/approvals${status ? `?status=${status}` : ""}`);
+export type {
+  ApprovalResult, ApprovalRow, ClassInput, CreateSessionInput, DashboardMetrics
+};
+
+// Reads
+export async function listApprovals(status?: BookingStatus): Promise<ApprovalRow[]> {
+  await assertAdmin();
+  return loadApprovals(status);
 }
 export async function listApprovalsDetailed(status?: BookingStatus): Promise<ApprovalRow[]> {
-  return apiGet<ApprovalRow[]>(`/api/admin/approvals${status ? `?status=${status}` : ""}`);
+  await assertAdmin();
+  return loadApprovals(status);
 }
 export async function getBooking(id: string): Promise<ApprovalRow> {
-  return apiGet<ApprovalRow>(`/api/admin/approvals/${id}`);
-}
-export async function patchApproval(id: string, status: Exclude<BookingStatus, "PENDING">): Promise<ApprovalResult> {
-  return apiSend<ApprovalResult>(`/api/admin/approvals/${id}`, {
-    method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status })
-  });
+  await assertAdmin();
+  return getApproval(id);
 }
 export async function listSessionsByDate(startISO: string, endISO: string): Promise<PublicSession[]> {
-  return apiGet<PublicSession[]>(`/api/admin/sessions?start_date=${encodeURIComponent(startISO)}&end_date=${encodeURIComponent(endISO)}`);
+  await assertAdmin();
+  return loadSessions(startISO, endISO);
 }
-export async function createSession(input: CreateSessionInput): Promise<PublicSession> {
-  return apiSend<PublicSession>("/api/admin/sessions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) });
-}
-export async function listClasses(): Promise<ClassWithCount[]> {
-  return apiGet<ClassWithCount[]>("/api/admin/classes");
-}
-export async function createClass(input: ClassInput): Promise<Class> {
-  return apiSend<Class>("/api/admin/classes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) });
-}
-export async function updateClass(id: string, input: ClassInput): Promise<Class> {
-  return apiSend<Class>(`/api/admin/classes/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) });
+export async function listClasses() {
+  await assertAdmin();
+  return listClassesWithCount();
 }
 export async function getStudio(): Promise<Studio> {
-  return apiGet<Studio>("/api/admin/studio");
-}
-export async function updateStudio(input: Pick<Studio, "name" | "wa_number" | "bank_info">): Promise<Studio> {
-  return apiSend<Studio>("/api/admin/studio", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) });
+  await assertAdmin();
+  return loadStudio();
 }
 export async function getDashboardMetrics(): Promise<DashboardMetrics> {
-  return apiGet<DashboardMetrics>("/api/admin/dashboard");
+  await assertAdmin();
+  return dashboardMetrics();
 }
-export type { SessionStatus };
+
+// Writes
+export async function patchApproval(
+  id: string,
+  status: Exclude<BookingStatus, "PENDING">
+): Promise<ApprovalResult> {
+  await assertAdmin();
+  const booking = status === "APPROVED" ? await approveBookingRpc(id) : await rejectBooking(id);
+  const row = await buildApprovalRow(booking);
+  const notify = status === "APPROVED"
+    ? await notifyBookingConfirmed(booking, row.session)
+    : { email: "skipped" as const, wa: "stubbed" as const, warnings: [] as string[] };
+  return { ...row, notify };
+}
+
+export async function createSession(input: CreateSessionInput): Promise<PublicSession> {
+  await assertAdmin();
+  if (!input.class_id || !input.start_time || !input.end_time) {
+    throw new ApiError(400, "class_id, start_time, end_time wajib", "VALIDATION_ERROR");
+  }
+  return createSessionRow(input);
+}
+
+export async function createClass(input: ClassInput): Promise<Class> {
+  await assertAdmin();
+  if (!input.title || typeof input.capacity !== "number" || typeof input.price !== "number") {
+    throw new ApiError(400, "title, capacity, price wajib", "VALIDATION_ERROR");
+  }
+  return createClassRow(input);
+}
+
+export async function updateClass(id: string, input: ClassInput): Promise<Class> {
+  await assertAdmin();
+  return updateClassRow(id, input);
+}
+
+export async function updateStudio(input: Pick<Studio, "name" | "wa_number" | "bank_info">): Promise<Studio> {
+  await assertAdmin();
+  return updateStudioRow(input);
+}
+
+export async function getProofUrl(bookingId: string): Promise<string> {
+  await assertAdmin();
+  return getProofSignedUrl(bookingId);
+}

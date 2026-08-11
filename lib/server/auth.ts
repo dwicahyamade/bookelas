@@ -1,74 +1,38 @@
-import type { NextRequest } from "next/server";
-import { createHmac, timingSafeEqual } from "node:crypto";
-import { ApiError } from "../errors.ts";
+import { cookies } from "next/headers";
+import { ApiError } from "@/lib/errors";
+import { signToken, verifyToken, timingSafeEqualString, COOKIE_MAX_AGE } from "./auth-token";
 
 const COOKIE = process.env.AUTH_COOKIE_NAME ?? "bookelas_admin";
-const MAX_AGE = Number(process.env.AUTH_MAX_AGE_SECONDS ?? 43200);
 
-function secret(): string {
-  const s = process.env.AUTH_SECRET;
-  if (!s || s.length < 16) throw new Error("AUTH_SECRET missing or too short (<16 chars)");
-  return s;
-}
-function b64url(input: Buffer | string): string {
-  return Buffer.from(input).toString("base64url");
-}
-function sign(payload: string): string {
-  return createHmac("sha256", secret()).update(payload).digest("base64url");
+export async function isAdmin(): Promise<boolean> {
+  const jar = await cookies();
+  return verifyToken(jar.get(COOKIE)?.value);
 }
 
-export function signToken(): string {
-  const exp = Date.now() + MAX_AGE * 1000;
-  const payload = `${exp}.${b64url(crypto.randomUUID())}`;
-  return `${b64url(payload)}.${sign(payload)}`;
+export async function assertAdmin(): Promise<void> {
+  if (!(await isAdmin())) throw new ApiError(401, "Tidak terautentikasi", "UNAUTHORIZED");
 }
 
-export function verifyToken(token: string | undefined | null): boolean {
-  if (!token) return false;
-  const parts = token.split(".");
-  if (parts.length !== 2) return false;
-  let payload: string;
-  try {
-    payload = Buffer.from(parts[0], "base64url").toString("utf8");
-  } catch {
-    return false;
+export async function login(password: string): Promise<void> {
+  const expected = process.env.ADMIN_PASSWORD;
+  if (!expected) throw new ApiError(500, "ADMIN_PASSWORD belum dikonfigurasi", "ADMIN_NOT_CONFIGURED");
+  if (typeof password !== "string" || password.length === 0 || !timingSafeEqualString(password, expected)) {
+    throw new ApiError(401, "Kata sandi salah", "INVALID_PASSWORD");
   }
-  const expected = sign(payload);
-  const a = Buffer.from(parts[1]);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length || !timingSafeEqual(a, b)) return false;
-  const [exp] = payload.split(".");
-  const expMs = Number(exp);
-  return (
-    Number.isFinite(expMs) &&
-    expMs >= Date.now() &&
-    expMs - Date.now() <= MAX_AGE * 1000 + 60_000
-  );
+  const jar = await cookies();
+  jar.set(COOKIE, signToken(), {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: COOKIE_MAX_AGE,
+  });
 }
 
-export function isAdmin(req: NextRequest): boolean {
-  return verifyToken(req.cookies.get(COOKIE)?.value);
+export async function logout(): Promise<void> {
+  const jar = await cookies();
+  jar.set(COOKIE, "", { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 0 });
 }
-export function assertAdmin(req: NextRequest): void {
-  if (!isAdmin(req)) throw new ApiError(401, "Tidak terautentikasi", "UNAUTHORIZED");
-}
+
 export const ADMIN_COOKIE = COOKIE;
-export const COOKIE_MAX_AGE = MAX_AGE;
-
-export function setAdminCookie(res: Response, token: string): void {
-  res.headers.append(
-    "set-cookie",
-    `${COOKIE}=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=${MAX_AGE}${process.env.NODE_ENV === "production" ? "; Secure" : ""}`
-  );
-}
-export function clearAdminCookie(res: Response): void {
-  res.headers.append(
-    "set-cookie",
-    `${COOKIE}=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0${process.env.NODE_ENV === "production" ? "; Secure" : ""}`
-  );
-}
-export function timingSafeEqualString(a: string, b: string): boolean {
-  const ab = Buffer.from(a);
-  const bb = Buffer.from(b);
-  return ab.length === bb.length && timingSafeEqual(ab, bb);
-}
+export { signToken, verifyToken, timingSafeEqualString, COOKIE_MAX_AGE };

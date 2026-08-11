@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Pencil, Plus } from "lucide-react";
-import { listClasses, sessionCountForClass, type ClassInput } from "@/lib/api/admin";
+import { listClasses, type ClassInput } from "@/lib/api/admin";
 import { ClassDialog } from "@/components/admin/class-dialog";
 
 const priceFormatter = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 });
@@ -33,7 +33,7 @@ export default function ClassesPage() {
                   <td className="px-5 py-4"><p className="font-semibold">{c.title}</p><p className="mt-1 max-w-md text-xs text-ink/50">{c.description}</p></td>
                   <td className="px-5 py-4 font-semibold tabular text-cypress">{c.capacity}</td>
                   <td className="px-5 py-4 tabular">{priceFormatter.format(c.price)}</td>
-                  <td className="px-5 py-4 font-medium tabular text-ink/60">{sessionCountForClass(c.id)}</td>
+                  <td className="px-5 py-4 font-medium tabular text-ink/60">{c.session_count}</td>
                   <td className="px-5 py-4 text-right"><button type="button" onClick={() => startEdit({ id: c.id, title: c.title, description: c.description, capacity: c.capacity, price: c.price })} className="inline-flex items-center gap-1.5 rounded-full border border-ink/15 px-3 py-1.5 text-xs font-semibold hover:bg-white/60"><Pencil className="size-3.5" />Edit</button></td>
                 </tr>
               ))}

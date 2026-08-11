@@ -4,9 +4,11 @@
 
 **Goal:** Replace Bookelas fixture adapters with a Supabase-backed Next.js 16 backend for public bookings, protected single-admin operations, private payment proofs, and Resend approval email.
 
-**Architecture:** Browser components keep importing `lib/api/*`; those functions become thin `fetch` adapters calling Next.js App Router Route Handlers. Route Handlers run on the Node.js runtime, validate trust-boundary input, enforce the signed admin cookie, query Supabase through a server-only service-role client, upload proofs to a private bucket, and trigger Resend after approval. Next 16 `proxy.ts` provides an early optimistic auth redirect; every admin handler still verifies auth server-side.
+**Architecture:** Browser and Server Components keep importing `lib/api/*`; those functions are direct `"use server"` actions calling `lib/server/*` and Supabase. No application `/api/*` Route Handlers, browser Supabase client, or `proxy.ts`. Admin pages use an `isAdmin()` guard in `/(admin)/layout.tsx`; every admin action calls `assertAdmin()`.
 
-**Tech Stack:** Next.js 16.3 App Router Route Handlers + `proxy.ts`; TypeScript strict mode; Supabase PostgreSQL/Storage via `@supabase/supabase-js`; Zod 3.23; native `fetch` for Resend HTTP API; existing React Query, `ApiError`, and self-check scripts.
+> **Architecture revision (2026-08-11):** Tasks 1, 8, 9, and 10 were initially implemented with HTTP helpers and Route Handlers, then migrated to direct Server Actions at the user's request. The final implementation supersedes the route-based snippets below. Keep the database, atomic approval RPC, storage, notification, auth, and validation requirements; omit deleted `lib/http.ts`, `proxy.ts`, and `app/api/**` files.
+
+**Tech Stack:** Next.js 16.3 App Router Server Actions; TypeScript strict mode; Supabase PostgreSQL/Storage via `@supabase/supabase-js`; Zod 3.23; native `fetch` for Resend HTTP API; existing React Query, `ApiError`, and self-check scripts.
 
 ## Global Constraints
 

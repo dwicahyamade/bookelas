@@ -3,7 +3,7 @@ import { remainingSlots } from "@/lib/booking";
 import { ApiError } from "@/lib/errors";
 import { proofSignedUrl } from "@/lib/server/storage";
 import type { Booking, BookingStatus, Class, ClassSession, PublicSession, Studio } from "@/lib/types";
-import type { ApprovalRow, CreateSessionInput, ClassInput, DashboardMetrics } from "@/lib/api/admin";
+import type { ApprovalRow, CreateSessionInput, ClassInput, DashboardMetrics } from "@/lib/api/types";
 
 type SessionRow = ClassSession;
 
@@ -193,4 +193,10 @@ export async function rejectBooking(bookingId: string): Promise<Booking> {
   const { data, error } = await sb.from("bookings").update({ status: "REJECTED" }).eq("id", bookingId).select().maybeSingle();
   if (error || !data) throw new ApiError(404, "Booking tidak ditemukan", "BOOKING_NOT_FOUND");
   return data as Booking;
+}
+
+export async function getProofSignedUrl(bookingId: string): Promise<string> {
+  const { data, error } = await supabaseAdmin().from("bookings").select("payment_proof_url").eq("id", bookingId).maybeSingle();
+  if (error || !data) throw new ApiError(404, "Booking tidak ditemukan", "BOOKING_NOT_FOUND");
+  return proofSignedUrl(data.payment_proof_url);
 }

@@ -2,10 +2,16 @@
 
 Status: approved. Scope: Tahap 1–4 (core + notifications). Tahap 5 cron deferred.
 
+> **Architecture revision (2026-08-11):** the original design specified Next.js
+> Route Handlers (`/api/...`) with `lib/api/*` as `fetch` adapters. The user
+> chose the simpler **direct Server Actions** approach instead. Sections 4, 6,
+> and 9 below are updated to reflect the shipped architecture; the database,
+> auth, storage, and notification designs are unchanged.
+
 ## 1. Goal
 
 Make the existing frontend real: replace in-memory fixtures in `lib/api/*` with a
-Supabase-backed Next.js Route Handler layer. Public customers book a class via a
+Supabase-backed Next.js Server Actions layer. Public customers book a class via a
 magic token and upload a payment proof; the studio admin approves/rejects bookings;
 approval triggers an email confirmation (WhatsApp deferred to a stub).
 
@@ -37,19 +43,23 @@ real surface — backend must serve every function the frontend already calls.
 - `getStudio()`, `updateStudio(input)`
 - `getDashboardMetrics() → DashboardMetrics`
 
-## 4. Architecture (Approach A: Route Handlers + Supabase server client)
+## 4. Architecture (direct Server Actions + Supabase server client)
 
 ```
-Browser → lib/api/* (fetch → /api/...) → Route Handler → Supabase (service-role server client)
-Route Handler also: Zod validate, auth-cookie check, Storage upload/signed-URL, Resend
+Client/Server Component → lib/api/* (`"use server"` action) → lib/server/data.ts → Supabase
+Public actions: validate input, upload proof, create booking
+Admin actions: assert signed cookie, query/mutate data, create proof URL, notify
 ```
 
-- `lib/api/*` becomes a thin fetch layer over `/api/...`. Existing signatures stay
-  identical so client components and React Query hooks don't change.
-- Supabase service-role key is server-only; never shipped to browser.
-- No RLS. Admin access is gated by server middleware + cookie auth.
-  `# ponytail: no RLS, server-side middleware gates admin; add RLS when exposing a browser Supabase client`
-- Middleware protects `/api/admin/*` and the `/(admin)/*` page routes.
+- `lib/api/*` keeps the frontend contract, but calls server helpers directly; no
+  application `/api/*` runtime boundary and no browser `fetch` adapter.
+- `lib/server/*` is server-only. Supabase service-role key is never shipped to
+  the browser.
+- Admin `/(admin)/layout.tsx` calls `isAdmin()` and redirects to `/login`; every
+  admin action calls `assertAdmin()` again.
+- No RLS and no Supabase browser client.
+- `lib/server/auth-token.ts` contains framework-free HMAC signing/verification;
+  `lib/server/auth.ts` owns the Next `cookies()` integration.
 
 ## 5. Database
 
@@ -113,22 +123,32 @@ looks identical after the swap.
 
 ## 6. Files
 
-Route Handler files are required Next.js folders; helpers are folded in.
+No Route Handlers; Server Actions fold all server work into `lib/`.
 
-- `lib/server/supabase.ts` — server client factory (url + service key from env).
-- `lib/server/auth.ts` — `login(password) → setCookie`, `verify(req)`, `logout`.
-  Cookie value = `crypto.randomUUID()` HMAC-signed with `AUTH_SECRET`; httpOnly,
-  SameSite=Lax, Secure in prod.
-- `lib/server/notify.ts` — `sendBookingConfirmed(...)`: Resend email active,
-  WhatsApp no-op/structured-log (provider deferred).
-- `proxy.ts` — Next 16 request proxy; gate `/api/admin/*` and the URL paths rendered by `/(admin)/*`. Route handlers still verify the cookie server-side.
-- `app/api/admin/login/route.ts`, `app/api/admin/logout/route.ts`.
-- Public routes under `app/api/public/...`, admin under `app/api/admin/...`,
-  matching the adapter surface in §3.
-- Migration: `supabase/migrations/0001_init.sql` (DDL + RPC + seed).
-- Storage policy: `supabase/seed/storage.sql` (private bucket create).
+- `lib/server/supabase.ts` — cached service-role client factory (url + key from env).
+- `lib/server/auth-token.ts` — framework-free HMAC sign/verify + constant-time
+  string compare. Self-checkable by raw Node.
+- `lib/server/auth.ts` — Next `cookies()` integration: `isAdmin()`,
+  `assertAdmin()`, `login(password)`, `logout()`. Token value is
+  `base64url(payload).base64url(hmac)` with `httpOnly`, `SameSite=Lax`, Secure in prod.
+- `lib/server/notify.ts` — `notifyBookingConfirmed(...)`: Resend email active,
+  WhatsApp structured-log stub (provider deferred).
+- `lib/server/data.ts` — typed Supabase query/mapper helpers.
+- `lib/server/storage.ts` — `uploadProof`, `proofSignedUrl`.
+- `lib/api/public.ts` — `"use server"`: `getSessionByToken`, `createBooking`.
+- `lib/api/admin.ts` — `"use server"`: approval/session/class/studio reads +
+  writes; each action calls `assertAdmin()`.
+- `lib/api/auth.ts` — `"use server"`: `login`, `logout` (thin wrappers over
+  `lib/server/auth.ts`).
+- `lib/api/types.ts` — shared DTO types (`ApprovalRow`, `CreateSessionInput`,
+  `ClassInput`, `DashboardMetrics`, notification results) to break import cycles.
+- `app/(admin)/layout.tsx` — server-side `isAdmin()` guard, redirects to `/login`.
+- `app/login/page.tsx` + `components/admin/login-form.tsx` — env-password login.
+- `supabase/migrations/0001_init.sql` — DDL + RPC.
+- `supabase/seed.sql` — demo data + private `payment-proofs` bucket.
 
-`lib/api/*` rewritten to thin fetchers; existing types and `ApiError` reused.
+Existing component signatures and `ApiError` are reused; `lib/http.ts`,
+`lib/http.self-check.ts`, `proxy.ts`, and `app/api/**` were removed.
 
 ## 7. Notification behavior
 

@@ -4,8 +4,6 @@ import { useState, type ReactNode } from "react";
 import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
 
-// ponytail: auth guard intentionally absent until Supabase Auth exists.
-
 export function AdminShell({ children }: { children: ReactNode }) {
   const [menuOpen, setMenuOpen] = useState(false);
   return (

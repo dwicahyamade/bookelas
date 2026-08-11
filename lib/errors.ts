@@ -14,5 +14,6 @@ export function isApiError(e: unknown): e is ApiError {
 }
 
 export function apiMessage(e: unknown, fallback: string): string {
+  if (e instanceof Error) return e.message;
   return isApiError(e) ? e.message : fallback;
 }

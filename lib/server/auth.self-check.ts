@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
-import { signToken, verifyToken, timingSafeEqualString } from "./auth.ts";
+import { signToken, verifyToken, timingSafeEqualString } from "./auth-token.ts";
 
 function demo() {
   process.env.AUTH_SECRET = "test-secret-at-least-16-chars!!";
