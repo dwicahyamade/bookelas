@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "check": "node --experimental-strip-types lib/booking.self-check.ts && node --experimental-strip-types lib/validation/booking.self-check.ts && node --experimental-strip-types lib/calendar.self-check.ts && node --experimental-strip-types lib/http.self-check.ts"
+    "check": "node --experimental-strip-types lib/booking.self-check.ts && node --experimental-strip-types lib/validation/booking.self-check.ts && node --experimental-strip-types lib/calendar.self-check.ts && node --experimental-strip-types lib/http.self-check.ts && node --experimental-strip-types lib/server/auth.self-check.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
