@@ -63,15 +63,19 @@ Use the DDL in `plan-backend.md` §2 verbatim (`studios`, `classes`,
 ```sql
 create or replace function approve_booking(p_booking_id uuid)
 returns bookings language plpgsql as $$
-declare b bookings%rowtype; cap int; approved int;
+declare b bookings%rowtype; s class_sessions%rowtype; cap int; approved int;
 begin
-  select * into b from bookings where id = p_booking_id for update;
+  select * into b from bookings where id = p_booking_id;
   if not found then raise exception 'BOOKING_NOT_FOUND' using errcode = 'P0002'; end if;
   if b.status <> 'PENDING' then return b; end if;
 
+  -- Lock the SESSION row: serializes concurrent approvals across different
+  -- bookings of the same session (locking only the booking row would not).
+  select * into s from class_sessions where id = b.session_id for update;
+
   select c.capacity into cap
-    from class_sessions s join classes c on c.id = s.class_id
-   where s.id = b.session_id;
+    from class_sessions cs join classes c on c.id = cs.class_id
+   where cs.id = b.session_id;
   select count(*) into approved from bookings where session_id = b.session_id and status = 'APPROVED';
 
   if approved >= cap then
@@ -83,8 +87,12 @@ begin
 end; $$;
 ```
 
-`patchApproval` calls `approve_booking`; the `CLASS_FULL`/`BOOKING_NOT_FOUND`
-SQLstates map to the existing `ApiError` codes. Rejection stays a plain UPDATE.
+The `for update` on `class_sessions` is the real lock: two concurrent
+`approve_booking` calls for *different* bookings of the same session serialize on
+the session row, so the `approved` count is read consistently. Locking only the
+booking row would race across siblings. `patchApproval` calls `approve_booking`;
+`CLASS_FULL`/`BOOKING_NOT_FOUND` SQLstates map to the existing `ApiError` codes.
+Rejection stays a plain UPDATE.
 
 ### 5.3 Capacity check on booking
 
