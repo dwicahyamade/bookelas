@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-lora: "Lora", Georgia, serif;
+  --font-manrope: "Manrope", Arial, sans-serif;
+  color-scheme: light;
+}
+
+@layer base {
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    @apply bg-paper text-ink font-sans antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  ::selection { background: #1F4B47; color: #EFEAE0; }
+}
+
+@layer components {
+  .ui-input {
+    @apply w-full rounded-lg border border-ink/15 bg-white/50 px-4 py-3 text-sm text-ink placeholder:text-ink/35;
+    @apply transition focus:border-cypress focus:bg-white focus:outline-none focus:ring-2 focus:ring-cypress/30;
+    @apply disabled:cursor-not-allowed disabled:opacity-60;
+  }
+}
+
+@layer utilities {
+  .tabular { font-variant-numeric: tabular-nums; }
+  .hairline { box-shadow: inset 0 0 0 1px rgba(23, 21, 15, 0.12); }
+  .animate-in { animation: fade-slide 0.4s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  @keyframes fade-slide { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

@@ -1,0 +1,18 @@
+[
+  {
+    "id": "session-demo",
+    "class_id": "class-reformer-intro",
+    "start_time": "2026-08-15T09:00:00+08:00",
+    "end_time": "2026-08-15T10:00:00+08:00",
+    "magic_token": "demo-token",
+    "status": "SCHEDULED"
+  },
+  {
+    "id": "session-power-yoga",
+    "class_id": "class-power-yoga",
+    "start_time": "2026-08-16T16:00:00+08:00",
+    "end_time": "2026-08-16T17:00:00+08:00",
+    "magic_token": "power-yoga-demo",
+    "status": "SCHEDULED"
+  }
+]

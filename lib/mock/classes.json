@@ -1,0 +1,18 @@
+[
+  {
+    "id": "class-reformer-intro",
+    "studio_id": "studio-zenith",
+    "title": "Mat Pilates — Reformer Intro",
+    "description": "Sesi perkenalan ramah pemula. Fokus pada inti, pernapasan, dan pergerakan terkontrol di atas reformer.",
+    "capacity": 10,
+    "price": 150000
+  },
+  {
+    "id": "class-power-yoga",
+    "studio_id": "studio-zenith",
+    "title": "Power Yoga",
+    "description": "Aliran dinamis yang membangun kekuatan dan fleksibilitas. Minimal 6 bulan praktik yoga sebelumnya.",
+    "capacity": 12,
+    "price": 120000
+  }
+]

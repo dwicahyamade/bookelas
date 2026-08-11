@@ -1,0 +1,82 @@
+[
+  {
+    "id": "booking-demo-01",
+    "session_id": "session-demo",
+    "customer_name": "Sarah Aruna",
+    "customer_wa": "+628123456789",
+    "customer_email": "sarah@example.com",
+    "payment_proof_url": "/proofs/sarah.png",
+    "status": "APPROVED",
+    "created_at": "2026-08-09T09:15:00+08:00"
+  },
+  {
+    "id": "booking-demo-02",
+    "session_id": "session-demo",
+    "customer_name": "Dimas Putra",
+    "customer_wa": "+628123456790",
+    "customer_email": "dimas@example.com",
+    "payment_proof_url": "/proofs/dimas.png",
+    "status": "APPROVED",
+    "created_at": "2026-08-09T10:15:00+08:00"
+  },
+  {
+    "id": "booking-demo-03",
+    "session_id": "session-demo",
+    "customer_name": "Nadia Kusuma",
+    "customer_wa": "+628123456791",
+    "customer_email": "nadia@example.com",
+    "payment_proof_url": "/proofs/nadia.png",
+    "status": "APPROVED",
+    "created_at": "2026-08-09T11:15:00+08:00"
+  },
+  {
+    "id": "booking-demo-04",
+    "session_id": "session-demo",
+    "customer_name": "Bima Satria",
+    "customer_wa": "+628123456792",
+    "customer_email": "bima@example.com",
+    "payment_proof_url": "/proofs/bima.png",
+    "status": "APPROVED",
+    "created_at": "2026-08-09T12:15:00+08:00"
+  },
+  {
+    "id": "booking-demo-05",
+    "session_id": "session-demo",
+    "customer_name": "Alya Nirmala",
+    "customer_wa": "+628123456793",
+    "customer_email": "alya@example.com",
+    "payment_proof_url": "/proofs/alya.png",
+    "status": "APPROVED",
+    "created_at": "2026-08-09T13:15:00+08:00"
+  },
+  {
+    "id": "booking-demo-06",
+    "session_id": "session-demo",
+    "customer_name": "Raka Hadi",
+    "customer_wa": "+628123456794",
+    "customer_email": "raka@example.com",
+    "payment_proof_url": "/proofs/raka.png",
+    "status": "APPROVED",
+    "created_at": "2026-08-09T14:15:00+08:00"
+  },
+  {
+    "id": "booking-demo-07",
+    "session_id": "session-demo",
+    "customer_name": "Maya Lestari",
+    "customer_wa": "+628123456795",
+    "customer_email": "maya@example.com",
+    "payment_proof_url": "/proofs/maya.png",
+    "status": "APPROVED",
+    "created_at": "2026-08-09T15:15:00+08:00"
+  },
+  {
+    "id": "booking-demo-08",
+    "session_id": "session-power-yoga",
+    "customer_name": "Rani Dewi",
+    "customer_wa": "+628123456796",
+    "customer_email": "rani@example.com",
+    "payment_proof_url": "/proofs/rani.png",
+    "status": "PENDING",
+    "created_at": "2026-08-10T10:15:00+08:00"
+  }
+]
