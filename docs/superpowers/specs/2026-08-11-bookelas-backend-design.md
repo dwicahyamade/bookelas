@@ -121,7 +121,7 @@ Route Handler files are required Next.js folders; helpers are folded in.
   SameSite=Lax, Secure in prod.
 - `lib/server/notify.ts` — `sendBookingConfirmed(...)`: Resend email active,
   WhatsApp no-op/structured-log (provider deferred).
-- `middleware.ts` — gate `/api/admin/*` and `/(admin)/*`.
+- `proxy.ts` — Next 16 request proxy; gate `/api/admin/*` and the URL paths rendered by `/(admin)/*`. Route handlers still verify the cookie server-side.
 - `app/api/admin/login/route.ts`, `app/api/admin/logout/route.ts`.
 - Public routes under `app/api/public/...`, admin under `app/api/admin/...`,
   matching the adapter surface in §3.
