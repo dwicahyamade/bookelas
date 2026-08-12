@@ -7,6 +7,8 @@ import { listSessionsByDate } from "@/lib/api/admin";
 import { getWeekRange, shiftWeek, STUDIO_TZ } from "@/lib/calendar";
 import { CalendarGrid } from "@/components/admin/calendar-grid";
 import { SessionDialog } from "@/components/admin/session-dialog";
+import { SessionDetailDialog } from "@/components/admin/session-detail-dialog";
+import type { PublicSession } from "@/lib/types";
 
 const weekFmt = new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "long", year: "numeric", timeZone: STUDIO_TZ });
 
@@ -14,6 +16,7 @@ export default function CalendarPage() {
   const [anchor, setAnchor] = useState(() => new Date().toISOString());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [seedDate, setSeedDate] = useState<string>("");
+  const [selectedSession, setSelectedSession] = useState<PublicSession | null>(null);
 
   const { start, end } = useMemo(() => getWeekRange(anchor), [anchor]);
   const { data: sessions, isLoading } = useQuery({ queryKey: ["calendar", anchor], queryFn: () => listSessionsByDate(start.toISOString(), end.toISOString()) });
@@ -39,9 +42,10 @@ export default function CalendarPage() {
         <p className="font-display text-2xl tracking-tight">{weekFmt.format(start)} — {weekFmt.format(end)}</p>
       </div>
 
-      <CalendarGrid anchor={anchor} sessions={sessions ?? []} isLoading={isLoading} onAdd={openAdd} />
+      <CalendarGrid anchor={anchor} sessions={sessions ?? []} isLoading={isLoading} onAdd={openAdd} onSelect={setSelectedSession} />
 
       <SessionDialog open={dialogOpen} onClose={() => setDialogOpen(false)} initialDate={seedDate} />
+      <SessionDetailDialog session={selectedSession} onClose={() => setSelectedSession(null)} />
     </div>
   );
 }

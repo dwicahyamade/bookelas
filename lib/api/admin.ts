@@ -2,9 +2,9 @@
 
 import { assertAdmin } from "@/lib/server/auth";
 import {
-  approveBookingRpc, buildApprovalRow, createClassRow, createSessionRow, dashboardMetrics,
-  getApproval, getProofSignedUrl, getStudio as loadStudio, listApprovalsDetailed as loadApprovals,
-  listClassesWithCount, listSessionsByDate as loadSessions, rejectBooking, updateClassRow, updateStudioRow,
+  approveBookingRpc, buildApprovalRow, cancelBooking, createClassRow, createSessionRow, dashboardMetrics,
+  getApproval, getProofSignedUrl, getSessionById, getStudio as loadStudio, listApprovalsDetailed as loadApprovals,
+  listBookingsBySession, listCustomerBookings, listRecentBookings as loadRecentBookings, listClassesWithCount, listSessionsByDate as loadSessions, rejectBooking, updateClassRow, updateStudioRow,
 } from "@/lib/server/data";
 import { notifyBookingConfirmed } from "@/lib/server/notify";
 import { ApiError } from "@/lib/errors";
@@ -31,6 +31,26 @@ export async function getBooking(id: string): Promise<ApprovalRow> {
   await assertAdmin();
   return getApproval(id);
 }
+export async function getSession(id: string): Promise<PublicSession> {
+  await assertAdmin();
+  return getSessionById(id);
+}
+
+export async function listSessionParticipants(sessionId: string): Promise<ApprovalRow[]> {
+  await assertAdmin();
+  return listBookingsBySession(sessionId);
+}
+export async function searchCustomerBookings(search: string): Promise<ApprovalRow[]> {
+  await assertAdmin();
+  if (search.trim().length < 3) {
+    throw new ApiError(400, "Masukkan minimal 3 karakter", "VALIDATION_ERROR");
+  }
+  return listCustomerBookings(search);
+}
+export async function listRecentBookings(limit = 20): Promise<ApprovalRow[]> {
+  await assertAdmin();
+  return loadRecentBookings(limit);
+}
 export async function listSessionsByDate(startISO: string, endISO: string): Promise<PublicSession[]> {
   await assertAdmin();
   return loadSessions(startISO, endISO);
@@ -51,15 +71,21 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
 // Writes
 export async function patchApproval(
   id: string,
-  status: Exclude<BookingStatus, "PENDING">
+  status: Exclude<BookingStatus, "PENDING" | "CANCELLED">
 ): Promise<ApprovalResult> {
   await assertAdmin();
   const booking = status === "APPROVED" ? await approveBookingRpc(id) : await rejectBooking(id);
   const row = await buildApprovalRow(booking);
   const notify = status === "APPROVED"
-    ? await notifyBookingConfirmed(booking, row.session)
-    : { email: "skipped" as const, wa: "stubbed" as const, warnings: [] as string[] };
-  return { ...row, notify };
+    ? await notifyBookingConfirmed(booking, row.session).catch(() => null)
+    : null;
+  return { ...row, notify: notify ?? { email: "skipped", wa: "stubbed", warnings: ["notify skipped"] } };
+}
+
+export async function cancelBookingAction(id: string): Promise<ApprovalRow> {
+  await assertAdmin();
+  const booking = await cancelBooking(id);
+  return buildApprovalRow(booking);
 }
 
 export async function createSession(input: CreateSessionInput): Promise<PublicSession> {

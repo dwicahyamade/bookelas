@@ -1,4 +1,4 @@
-export type BookingStatus = "PENDING" | "APPROVED" | "REJECTED";
+export type BookingStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
 export type SessionStatus = "SCHEDULED" | "COMPLETED" | "CANCELLED";
 
 export interface Studio {

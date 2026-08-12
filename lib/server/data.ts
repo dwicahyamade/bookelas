@@ -48,6 +48,12 @@ export async function getSessionByToken(token: string): Promise<PublicSession> {
   return computePublicSession(data as SessionRow);
 }
 
+export async function getSessionById(sessionId: string): Promise<PublicSession> {
+  const { data, error } = await supabaseAdmin().from("class_sessions").select("*").eq("id", sessionId).maybeSingle();
+  if (error || !data) throw new ApiError(404, "Sesi tidak ditemukan", "SESSION_NOT_FOUND");
+  return computePublicSession(data as SessionRow);
+}
+
 export async function getApproval(bookingId: string): Promise<ApprovalRow> {
   const { data, error } = await supabaseAdmin().from("bookings").select("*").eq("id", bookingId).maybeSingle();
   if (error || !data) throw new ApiError(404, "Booking tidak ditemukan", "BOOKING_NOT_FOUND");
@@ -70,6 +76,42 @@ export async function listApprovalsDetailed(status?: BookingStatus): Promise<App
   const { data, error } = await q;
   if (error) throw new ApiError(500, "Gagal memuat approvals", "QUERY_FAILED");
   return Promise.all((data as Booking[]).map(buildApprovalRow));
+}
+
+export async function listBookingsBySession(sessionId: string): Promise<ApprovalRow[]> {
+  const sb = supabaseAdmin();
+  const { data, error } = await sb.from("bookings").select("*")
+    .eq("session_id", sessionId).order("created_at", { ascending: true });
+  if (error) throw new ApiError(500, "Gagal memuat peserta", "QUERY_FAILED");
+  return Promise.all((data as Booking[]).map(buildApprovalRow));
+}
+
+export async function listRecentBookings(limit = 20): Promise<ApprovalRow[]> {
+  const sb = supabaseAdmin();
+  const { data, error } = await sb.from("bookings").select("*")
+    .order("created_at", { ascending: false }).limit(limit);
+  if (error) throw new ApiError(500, "Gagal memuat riwayat booking", "QUERY_FAILED");
+  return Promise.all((data as Booking[]).map(buildApprovalRow));
+}
+
+export async function listCustomerBookings(search: string): Promise<ApprovalRow[]> {
+  const term = search.trim();
+  if (!term) return [];
+  const sb = supabaseAdmin();
+  const [waResult, emailResult] = await Promise.all([
+    sb.from("bookings").select("*").ilike("customer_wa", `%${term}%`),
+    sb.from("bookings").select("*").ilike("customer_email", `%${term}%`)
+  ]);
+  if (waResult.error || emailResult.error) {
+    throw new ApiError(500, "Gagal memuat riwayat booking", "QUERY_FAILED");
+  }
+  const bookings = new Map<string, Booking>();
+  for (const booking of [...(waResult.data ?? []), ...(emailResult.data ?? [])] as Booking[]) {
+    bookings.set(booking.id, booking);
+  }
+  return Promise.all([...bookings.values()]
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    .map(buildApprovalRow));
 }
 
 async function sessionsCountByClass(): Promise<Map<string, number>> {
@@ -191,6 +233,13 @@ export async function approveBookingRpc(bookingId: string): Promise<Booking> {
 export async function rejectBooking(bookingId: string): Promise<Booking> {
   const sb = supabaseAdmin();
   const { data, error } = await sb.from("bookings").update({ status: "REJECTED" }).eq("id", bookingId).select().maybeSingle();
+  if (error || !data) throw new ApiError(404, "Booking tidak ditemukan", "BOOKING_NOT_FOUND");
+  return data as Booking;
+}
+
+export async function cancelBooking(bookingId: string): Promise<Booking> {
+  const sb = supabaseAdmin();
+  const { data, error } = await sb.from("bookings").update({ status: "CANCELLED" }).eq("id", bookingId).select().maybeSingle();
   if (error || !data) throw new ApiError(404, "Booking tidak ditemukan", "BOOKING_NOT_FOUND");
   return data as Booking;
 }

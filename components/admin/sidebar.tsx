@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, ClipboardCheck, LayoutDashboard, Settings, Sparkles, X } from "lucide-react";
+import { CalendarDays, ClipboardCheck, History, LayoutDashboard, Settings, Sparkles, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/approvals", label: "Approvals", icon: ClipboardCheck },
+  { href: "/history", label: "Booking history", icon: History },
   { href: "/classes", label: "Classes", icon: Sparkles },
   { href: "/settings", label: "Settings", icon: Settings }
 ];
