@@ -1,5 +1,6 @@
 export type BookingStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
 export type SessionStatus = "SCHEDULED" | "COMPLETED" | "CANCELLED";
+export type UserRole = "superadmin" | "admin";
 
 export interface Studio {
   id: string;
@@ -8,9 +9,18 @@ export interface Studio {
   bank_info: string;
 }
 
+export interface Branch {
+  id: string;
+  name: string;
+  slug: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Class {
   id: string;
-  studio_id: string;
+  branch_id: string;
   title: string;
   description: string;
   capacity: number;
@@ -40,6 +50,7 @@ export interface Booking {
 export interface PublicSession extends ClassSession {
   class: Class;
   studio: Studio;
+  branch: Branch;
   approved_count: number;
   remaining_slots: number;
 }
@@ -50,4 +61,13 @@ export interface CreateBookingInput {
   customer_wa: string;
   customer_email: string;
   payment_proof: File;
+}
+
+export interface AdminUser {
+  id: string;
+  username: string;
+  branch_id: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
