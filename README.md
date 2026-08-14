@@ -9,14 +9,14 @@ Full-stack MVP. Frontend talks to Supabase (PostgreSQL + Storage) through Next.j
 ## Quick start
 
 ```bash
-cp .env.example .env.local   # fill in Supabase + ADMIN_PASSWORD + AUTH_SECRET + Resend
+cp .env.example .env.local   # fill in Supabase + SUPERADMIN_USERNAME/PASSWORD + AUTH_SECRET + Resend
 npm install
 npm run dev
 ```
 
 Open the demo magic link (requires seeded Supabase): <http://localhost:3000/b/11111111-1111-1111-1111-222222222222>
 
-Admin: <http://localhost:3000/login> with `ADMIN_PASSWORD`.
+Superadmin: <http://localhost:3000/login> with `SUPERADMIN_USERNAME` + `SUPERADMIN_PASSWORD`. Admin cabang dibuat oleh superadmin via UI (`/admins`).
 
 ## Scripts
 
@@ -30,12 +30,14 @@ Admin: <http://localhost:3000/login> with `ADMIN_PASSWORD`.
 - `/b/[magic_token]` — class summary, slot meter, booking form, payment instructions, proof upload, pending confirmation
 
 ### Admin (sidebar shell, desktop-first, auth-gated)
-- `/login` — env-password login
+- `/login` — username/password login
 - `/dashboard` — metrics, next session, quick actions
 - `/approvals` — verification queue, proof preview dialog, approve/reject
 - `/calendar` — weekly grid, copy magic link, create session
 - `/classes` — master class CRUD
-- `/settings` — studio profile (name, WhatsApp, bank info)
+- `/branches` — superadmin branch CRUD
+- `/admins` — superadmin branch-admin CRUD
+- `/settings` — superadmin studio profile (name, WhatsApp, bank info)
 
 ### Data flow
 - `lib/api/*` — `"use server"` actions; the only place UI invokes server work.
@@ -44,7 +46,7 @@ Admin: <http://localhost:3000/login> with `ADMIN_PASSWORD`.
 
 ## Env
 
-See `.env.example`. Key vars: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_PASSWORD`, `AUTH_SECRET`, `RESEND_API_KEY`, `EMAIL_FROM`.
+See `.env.example`. Key vars: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPERADMIN_USERNAME`, `SUPERADMIN_PASSWORD`, `AUTH_SECRET`, `RESEND_API_KEY`, `EMAIL_FROM`.
 
 ## Notes
 
