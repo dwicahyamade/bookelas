@@ -3,15 +3,15 @@
 import { assertSuperadmin } from "@/lib/server/auth";
 import { adminUserInputSchema, adminUserUpdateSchema } from "@/lib/validation/admin";
 import {
-  createAdminUser, listAdminUsers, resetAdminPassword, updateAdminUser,
+  createAdminUser, listAdminUsers, resetAdminPassword, setAdminActive, updateAdminUser,
 } from "@/lib/server/admin-users";
 import { ApiError } from "@/lib/errors";
 import type { AdminUser } from "@/lib/types";
-import type { AdminUserInput, AdminUserUpdateInput } from "@/lib/api/types";
+import type { AdminUserInput, AdminUserUpdateInput, AdminUserWithBranch } from "@/lib/api/types";
 
-export type { AdminUserInput, AdminUserUpdateInput };
+export type { AdminUserInput, AdminUserUpdateInput, AdminUserWithBranch };
 
-export async function listAdmins(): Promise<AdminUser[]> {
+export async function listAdmins(): Promise<AdminUserWithBranch[]> {
   await assertSuperadmin();
   return listAdminUsers();
 }
@@ -33,4 +33,9 @@ export async function editAdmin(id: string, input: AdminUserUpdateInput): Promis
 export async function resetPassword(id: string, password: string): Promise<void> {
   await assertSuperadmin();
   return resetAdminPassword(id, password);
+}
+
+export async function toggleAdmin(id: string, active: boolean): Promise<void> {
+  await assertSuperadmin();
+  return setAdminActive(id, active);
 }

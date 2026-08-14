@@ -2,20 +2,20 @@ import { supabaseAdmin } from "./supabase";
 import { hashPassword } from "./password";
 import { ApiError } from "@/lib/errors";
 import type { AdminUser } from "@/lib/types";
-import type { AdminUserInput, AdminUserUpdateInput } from "@/lib/api/types";
+import type { AdminUserInput, AdminUserUpdateInput, AdminUserWithBranch } from "@/lib/api/types";
 
 function isReservedUsername(username: string): boolean {
   const reserved = process.env.SUPERADMIN_USERNAME;
   return !!reserved && reserved.toLowerCase() === username.trim().toLowerCase();
 }
 
-export async function listAdminUsers(): Promise<AdminUser[]> {
+export async function listAdminUsers(): Promise<AdminUserWithBranch[]> {
   const { data, error } = await supabaseAdmin()
     .from("admin_users")
-    .select("id, username, branch_id, is_active, created_at, updated_at")
+    .select("id, username, branch_id, is_active, created_at, updated_at, branch:branches(*)")
     .order("username", { ascending: true });
   if (error) throw new ApiError(500, "Gagal memuat admin", "QUERY_FAILED");
-  return data as AdminUser[];
+  return data as unknown as AdminUserWithBranch[];
 }
 
 export async function createAdminUser(input: AdminUserInput): Promise<AdminUser> {
@@ -46,6 +46,11 @@ export async function updateAdminUser(id: string, input: AdminUserUpdateInput): 
 
 export async function resetAdminPassword(id: string, newPassword: string): Promise<void> {
   if (newPassword.length < 8) throw new ApiError(400, "Kata sandi minimal 8 karakter", "VALIDATION_ERROR");
-  const { error } = await supabaseAdmin().from("admin_users").update({ password_hash: hashPassword(newPassword) }).eq("id", id);
-  if (error) throw new ApiError(500, "Gagal reset kata sandi", "UPDATE_FAILED");
+  const { data, error } = await supabaseAdmin().from("admin_users").update({ password_hash: hashPassword(newPassword) }).eq("id", id).select("id").maybeSingle();
+  if (error || !data) throw new ApiError(404, "Admin tidak ditemukan", "ADMIN_NOT_FOUND");
+}
+
+export async function setAdminActive(id: string, active: boolean): Promise<void> {
+  const { data, error } = await supabaseAdmin().from("admin_users").update({ is_active: active }).eq("id", id).select("id").maybeSingle();
+  if (error || !data) throw new ApiError(404, "Admin tidak ditemukan", "ADMIN_NOT_FOUND");
 }

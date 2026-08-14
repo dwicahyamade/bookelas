@@ -9,6 +9,7 @@ import { Field } from "@/components/ui/field";
 
 export function LoginForm() {
   const router = useRouter();
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +19,7 @@ export function LoginForm() {
     setBusy(true);
     setError(null);
     try {
-      await login(password);
+      await login(username, password);
       router.replace("/dashboard");
       router.refresh();
     } catch (err) {
@@ -29,10 +30,13 @@ export function LoginForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <Field id="password" label="Kata sandi" error={error ?? undefined}>
-        <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="ui-input" autoFocus />
+      <Field id="username" label="Username" error={error ?? undefined} required>
+        <input id="username" type="text" value={username} onChange={(e) => setUsername(e.target.value)} className="ui-input" autoComplete="username" autoFocus />
       </Field>
-      <button type="submit" disabled={busy || !password} className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-cypress px-5 py-3 text-sm font-semibold text-paper hover:bg-cypress/90 disabled:opacity-50">
+      <Field id="password" label="Kata sandi" required>
+        <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="ui-input" autoComplete="current-password" />
+      </Field>
+      <button type="submit" disabled={busy || !username || !password} className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-cypress px-5 py-3 text-sm font-semibold text-paper hover:bg-cypress/90 disabled:opacity-50">
         {busy ? <Loader2 className="size-4 animate-spin" /> : null}Masuk
       </button>
     </form>

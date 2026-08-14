@@ -4,12 +4,16 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Pencil, Plus } from "lucide-react";
 import { listClasses, type ClassInput } from "@/lib/api/admin";
+import { listAllBranches } from "@/lib/api/branches";
 import { ClassDialog } from "@/components/admin/class-dialog";
+import { useAdminUser } from "@/components/admin/admin-shell";
 
 const priceFormatter = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 });
 
 export default function ClassesPage() {
+  const user = useAdminUser();
   const { data: classes, isLoading } = useQuery({ queryKey: ["classes"], queryFn: listClasses });
+  const { data: branches = [] } = useQuery({ queryKey: ["branches"], queryFn: () => listAllBranches(true), enabled: user.role === "superadmin" });
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<(ClassInput & { id: string }) | null>(null);
 
@@ -42,7 +46,7 @@ export default function ClassesPage() {
         </div>
       ) : <div className="rounded-2xl border border-dashed border-ink/20 p-16 text-center"><p className="font-display text-3xl">Belum ada kelas.</p><p className="mt-2 text-sm text-ink/55">Buat kelas pertama untuk mulai menjadwalkan sesi.</p></div>}
 
-      <ClassDialog open={open} editing={editing} onClose={() => setOpen(false)} />
+      <ClassDialog open={open} editing={editing} branchId={user.branch_id} branches={branches} isSuperadmin={user.role === "superadmin"} onClose={() => setOpen(false)} />
     </div>
   );
 }

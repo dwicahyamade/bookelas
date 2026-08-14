@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -10,6 +10,7 @@ import { z } from "zod";
 import { createClass, updateClass, type ClassInput } from "@/lib/api/admin";
 import { apiMessage } from "@/lib/errors";
 import { Field } from "@/components/ui/field";
+import type { Branch } from "@/lib/types";
 
 const classSchema = z.object({
   title: z.string().trim().min(3, "Judul minimal 3 karakter").max(120, "Judul terlalu panjang"),
@@ -21,26 +22,27 @@ type ClassFormValues = z.infer<typeof classSchema>;
 
 const EMPTY: ClassFormValues = { title: "", description: "", capacity: 10, price: 150000 };
 
-export function ClassDialog({ open, editing, onClose }: { open: boolean; editing: ClassInput & { id: string } | null; onClose: () => void }) {
+export function ClassDialog({ open, editing, branchId, branches, isSuperadmin, onClose }: {
+  open: boolean;
+  editing: ClassInput & { id: string } | null;
+  branchId?: string | null;
+  branches: Branch[];
+  isSuperadmin: boolean;
+  onClose: () => void;
+}) {
   const queryClient = useQueryClient();
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<ClassFormValues>({
-    resolver: zodResolver(classSchema),
-    defaultValues: EMPTY
-  });
+  const [selectedBranch, setSelectedBranch] = useState(branchId ?? branches[0]?.id ?? "");
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<ClassFormValues>({ resolver: zodResolver(classSchema), defaultValues: EMPTY });
 
-  useEffect(() => { if (editing) reset({ title: editing.title, description: editing.description, capacity: editing.capacity, price: editing.price }); }, [editing, reset]);
+  useEffect(() => { setSelectedBranch(branchId ?? branches[0]?.id ?? ""); }, [branchId, branches]);
+  useEffect(() => { reset(editing ? { title: editing.title, description: editing.description, capacity: editing.capacity, price: editing.price } : EMPTY); }, [editing, reset]);
 
   const mutation = useMutation({
     mutationFn: async (values: ClassFormValues) => {
       const input: ClassInput = { title: values.title, description: values.description, capacity: Number(values.capacity), price: Number(values.price) };
-      return editing ? updateClass(editing.id, input) : createClass(input);
+      return editing ? updateClass(editing.id, input) : createClass(input, isSuperadmin ? selectedBranch : undefined);
     },
-    onSuccess: () => {
-      toast.success(editing ? "Kelas diperbarui" : "Kelas dibuat");
-      void queryClient.invalidateQueries({ queryKey: ["classes"] });
-      void queryClient.invalidateQueries({ queryKey: ["calendar"] });
-      handleClose();
-    },
+    onSuccess: () => { toast.success(editing ? "Kelas diperbarui" : "Kelas dibuat"); void queryClient.invalidateQueries({ queryKey: ["classes"] }); void queryClient.invalidateQueries({ queryKey: ["calendar"] }); handleClose(); },
     onError: (e) => toast.error(apiMessage(e, "Gagal menyimpan kelas"))
   });
 
@@ -54,11 +56,9 @@ export function ClassDialog({ open, editing, onClose }: { open: boolean; editing
         <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className="mt-6 space-y-5" noValidate>
           <Field id="title" label="Judul kelas" error={errors.title?.message} required><input id="title" disabled={isSubmitting} {...register("title")} className="ui-input" /></Field>
           <Field id="description" label="Deskripsi" error={errors.description?.message}><textarea id="description" rows={3} disabled={isSubmitting} {...register("description")} className="ui-input resize-none" /></Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field id="capacity" label="Kapasitas" error={errors.capacity?.message} required><input id="capacity" type="number" inputMode="numeric" min={1} max={100} disabled={isSubmitting} {...register("capacity")} className="ui-input" /></Field>
-            <Field id="price" label="Harga (Rp)" error={errors.price?.message} required><input id="price" type="number" inputMode="numeric" min={0} step={1000} disabled={isSubmitting} {...register("price")} className="ui-input" /></Field>
-          </div>
-          <button type="submit" disabled={isSubmitting} className="flex w-full items-center justify-center gap-2 rounded-full bg-cypress px-5 py-3 text-sm font-semibold text-paper hover:bg-cypress/90 disabled:opacity-60">{isSubmitting && <Loader2 className="size-4 animate-spin" />}{editing ? "Simpan perubahan" : "Buat kelas"}</button>
+          <div className="grid grid-cols-2 gap-3"><Field id="capacity" label="Kapasitas" error={errors.capacity?.message} required><input id="capacity" type="number" inputMode="numeric" min={1} max={100} disabled={isSubmitting} {...register("capacity")} className="ui-input" /></Field><Field id="price" label="Harga (Rp)" error={errors.price?.message} required><input id="price" type="number" inputMode="numeric" min={0} step={1000} disabled={isSubmitting} {...register("price")} className="ui-input" /></Field></div>
+          {isSuperadmin && !editing && <Field id="class-branch" label="Cabang" required><select id="class-branch" value={selectedBranch} onChange={(e) => setSelectedBranch(e.target.value)} disabled={isSubmitting} className="ui-input"><option value="">Pilih cabang…</option>{branches.filter((b) => b.is_active).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select></Field>}
+          <button type="submit" disabled={isSubmitting || (isSuperadmin && !editing && !selectedBranch)} className="flex w-full items-center justify-center gap-2 rounded-full bg-cypress px-5 py-3 text-sm font-semibold text-paper hover:bg-cypress/90 disabled:opacity-60">{isSubmitting && <Loader2 className="size-4 animate-spin" />}{editing ? "Simpan perubahan" : "Buat kelas"}</button>
         </form>
       </section>
     </div>

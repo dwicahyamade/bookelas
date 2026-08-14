@@ -2,20 +2,26 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, ClipboardCheck, History, LayoutDashboard, Settings, Sparkles, X } from "lucide-react";
+import { Building2, CalendarDays, ClipboardCheck, History, LayoutDashboard, Settings, Sparkles, Users, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { CurrentUser } from "@/lib/server/auth";
 
-const links = [
+type NavItem = { href: string; label: string; icon: typeof LayoutDashboard; superadminOnly?: boolean };
+
+const links: NavItem[] = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/approvals", label: "Approvals", icon: ClipboardCheck },
   { href: "/history", label: "Booking history", icon: History },
   { href: "/classes", label: "Classes", icon: Sparkles },
-  { href: "/settings", label: "Settings", icon: Settings }
+  { href: "/branches", label: "Branches", icon: Building2, superadminOnly: true },
+  { href: "/admins", label: "Admins", icon: Users, superadminOnly: true },
+  { href: "/settings", label: "Settings", icon: Settings, superadminOnly: true },
 ];
 
-export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function Sidebar({ user, open, onClose }: { user: CurrentUser; open: boolean; onClose: () => void }) {
   const pathname = usePathname();
+  const visible = links.filter((l) => !l.superadminOnly || user.role === "superadmin");
   return (
     <>
       {open && <button aria-label="Tutup menu" onClick={onClose} className="fixed inset-0 z-30 bg-ink/35 lg:hidden" />}
@@ -28,13 +34,13 @@ export function Sidebar({ open, onClose }: { open: boolean; onClose: () => void 
           <button onClick={onClose} aria-label="Tutup menu" className="rounded p-1 text-paper/50 hover:bg-paper/10 hover:text-paper lg:hidden"><X className="size-5" /></button>
         </div>
         <nav aria-label="Admin navigation" className="mt-12 space-y-1">
-          {links.map(({ href, label, icon: Icon }) => {
+          {visible.map(({ href, label, icon: Icon }) => {
             const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
             return <Link key={href} href={href} onClick={onClose} className={cn("flex items-center gap-3 rounded-lg px-3 py-3 text-sm transition", active ? "bg-paper font-semibold text-ink" : "text-paper/65 hover:bg-paper/10 hover:text-paper")}><Icon className="size-4" aria-hidden="true" />{label}</Link>;
           })}
         </nav>
         <div className="mt-auto border-t border-paper/10 pt-5">
-          <p className="text-xs leading-5 text-paper/45">Single studio<br />Zenith Pilates</p>
+          <p className="text-xs leading-5 text-paper/45">{user.role === "superadmin" ? "Superadmin" : "Admin cabang"}<br />{user.username}</p>
         </div>
       </aside>
     </>
