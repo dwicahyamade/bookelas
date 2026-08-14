@@ -19,8 +19,9 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   const claims = verifyToken(jar.get(COOKIE)?.value);
   if (!claims) return null;
   if (claims.role === "admin") {
-    const { data } = await supabaseAdmin().from("admin_users").select("is_active").eq("id", claims.user_id).maybeSingle();
-    if (!data?.is_active) return null;
+    const { data } = await supabaseAdmin().from("admin_users").select("is_active, branch:branches(is_active, deleted_at)").eq("id", claims.user_id).maybeSingle();
+    const branch = data?.branch as unknown as { is_active: boolean; deleted_at: string | null } | null;
+    if (!data?.is_active || !branch?.is_active || branch.deleted_at) return null;
   }
   return { id: claims.user_id, username: claims.username, role: claims.role, branch_id: claims.branch_id };
 }

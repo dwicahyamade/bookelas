@@ -83,7 +83,7 @@ export async function buildApprovalRow(booking: Booking): Promise<ApprovalRow> {
 // branchId: null = all branches (superadmin). Returns null when unfiltered.
 async function classIdsByBranch(branchId: string | null): Promise<string[] | null> {
   if (branchId === null) return null;
-  const { data, error } = await supabaseAdmin().from("classes").select("id").eq("branch_id", branchId);
+  const { data, error } = await supabaseAdmin().from("classes").select("id").eq("branch_id", branchId).is("deleted_at", null);
   if (error) throw new ApiError(500, "Gagal memuat kelas", "QUERY_FAILED");
   return (data ?? []).map((r: { id: string }) => r.id);
 }
@@ -160,7 +160,7 @@ async function sessionsCountByClass(branchId: string | null = null): Promise<Map
   const sb = supabaseAdmin();
   let q = sb.from("class_sessions").select("class_id");
   if (branchId) {
-    const { data: cls } = await sb.from("classes").select("id").eq("branch_id", branchId);
+    const { data: cls } = await sb.from("classes").select("id").eq("branch_id", branchId).is("deleted_at", null);
     const ids = (cls ?? []).map((c: { id: string }) => c.id);
     if (ids.length === 0) return new Map();
     q = q.in("class_id", ids);
@@ -174,7 +174,7 @@ async function sessionsCountByClass(branchId: string | null = null): Promise<Map
 
 export async function listClassesWithCount(branchId: string | null = null): Promise<(Class & { session_count: number })[]> {
   const sb = supabaseAdmin();
-  let classQ = sb.from("classes").select("*").order("title", { ascending: true });
+  let classQ = sb.from("classes").select("*").is("deleted_at", null).order("title", { ascending: true });
   if (branchId) classQ = classQ.eq("branch_id", branchId);
   const [classesRes, counts] = await Promise.all([classQ, sessionsCountByClass(branchId)]);
   if (classesRes.error) throw new ApiError(500, "Gagal memuat kelas", "QUERY_FAILED");
@@ -198,7 +198,7 @@ export async function listSessionsByDate(startISO: string, endISO: string, branc
   let q = sb.from("class_sessions").select("*")
     .gte("start_time", startISO).lte("start_time", endISO).order("start_time", { ascending: true });
   if (branchId) {
-    const { data: cls } = await sb.from("classes").select("id").eq("branch_id", branchId);
+    const { data: cls } = await sb.from("classes").select("id").eq("branch_id", branchId).is("deleted_at", null);
     const ids = (cls ?? []).map((c: { id: string }) => c.id);
     if (ids.length === 0) return [];
     q = q.in("class_id", ids);
@@ -210,8 +210,8 @@ export async function listSessionsByDate(startISO: string, endISO: string, branc
 
 export async function createSessionRow(input: CreateSessionInput): Promise<PublicSession> {
   const sb = supabaseAdmin();
-  const { data: cls } = await sb.from("classes").select("id").eq("id", input.class_id).maybeSingle();
-  if (!cls) throw new ApiError(404, "Kelas tidak ditemukan", "CLASS_NOT_FOUND");
+  const { data: cls } = await sb.from("classes").select("id, deleted_at").eq("id", input.class_id).maybeSingle();
+  if (!cls || cls.deleted_at) throw new ApiError(404, "Kelas tidak ditemukan", "CLASS_NOT_FOUND");
   const { data, error } = await sb.from("class_sessions").insert({
     class_id: input.class_id, start_time: input.start_time, end_time: input.end_time, status: "SCHEDULED",
   }).select().single();
@@ -224,6 +224,7 @@ export async function createSessionRow(input: CreateSessionInput): Promise<Publi
 
 export async function createClassRow(input: ClassInput, branchId: string): Promise<Class> {
   const branch = await getBranch(branchId);
+  if (branch.deleted_at) throw new ApiError(409, "Cabang tidak tersedia", "BRANCH_DELETED");
   if (!branch.is_active) throw new ApiError(409, "Cabang nonaktif", "BRANCH_INACTIVE");
   const sb = supabaseAdmin();
   const { data, error } = await sb.from("classes").insert({ ...input, branch_id: branchId }).select().single();
@@ -235,9 +236,17 @@ export async function updateClassRow(id: string, input: ClassInput): Promise<Cla
   const sb = supabaseAdmin();
   const { data, error } = await sb.from("classes").update({
     title: input.title, description: input.description, capacity: input.capacity, price: input.price,
-  }).eq("id", id).select().maybeSingle();
+  }).eq("id", id).is("deleted_at", null).select().maybeSingle();
   if (error || !data) throw new ApiError(404, "Kelas tidak ditemukan", "CLASS_NOT_FOUND");
   return { ...(data as Class), price: Number((data as Class).price) };
+}
+
+export async function softDeleteClass(id: string): Promise<void> {
+  const { data, error } = await supabaseAdmin()
+    .from("classes").update({ deleted_at: new Date().toISOString() })
+    .eq("id", id).is("deleted_at", null).select("id").maybeSingle();
+  if (error) throw new ApiError(500, "Gagal menghapus kelas", "UPDATE_FAILED");
+  if (!data) throw new ApiError(404, "Kelas tidak ditemukan", "CLASS_NOT_FOUND");
 }
 
 export async function updateStudioRow(input: Pick<Studio, "name" | "wa_number" | "bank_info">): Promise<Studio> {
@@ -256,7 +265,7 @@ export async function dashboardMetrics(branchId: string | null = null): Promise<
 
   let scopedClassIds: string[] | null = null;
   if (branchId) {
-    const { data: cls } = await sb.from("classes").select("id").eq("branch_id", branchId);
+    const { data: cls } = await sb.from("classes").select("id").eq("branch_id", branchId).is("deleted_at", null);
     scopedClassIds = (cls ?? []).map((c: { id: string }) => c.id);
   }
   const noClasses = scopedClassIds !== null && scopedClassIds.length === 0;

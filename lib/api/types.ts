@@ -14,5 +14,5 @@ export type { SessionStatus, BookingStatus, Studio, Branch, AdminUser, UserRole 
 
 export interface BranchInput { name: string; slug: string; is_active: boolean; }
 export interface AdminUserInput { username: string; password: string; branch_id: string; is_active: boolean; }
-export interface AdminUserUpdateInput { branch_id: string; is_active: boolean; }
+export interface AdminUserUpdateInput { branch_id: string; is_active: boolean; password?: string; }
 export interface AdminUserWithBranch extends AdminUser { branch: Branch; }

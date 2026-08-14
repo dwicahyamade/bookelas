@@ -20,4 +20,5 @@ export const adminUserInputSchema = z.object({
 export const adminUserUpdateSchema = z.object({
   branch_id: z.string().min(1, "Cabang wajib"),
   is_active: z.boolean(),
+  password: z.string().max(200, "Kata sandi terlalu panjang").refine((value) => !value || value.length >= 8, "Kata sandi minimal 8 karakter").optional(),
 });

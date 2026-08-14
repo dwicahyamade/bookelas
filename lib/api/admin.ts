@@ -6,8 +6,9 @@ import {
   approveBookingRpc, buildApprovalRow, cancelBooking, classBranchId, createClassRow, createSessionRow, dashboardMetrics,
   getApproval, getProofSignedUrl, getSessionById, getStudio as loadStudio, listApprovalsDetailed as loadApprovals,
   listBookingsBySession, listCustomerBookings, listRecentBookings as loadRecentBookings, listClassesWithCount, listSessionsByDate as loadSessions,
-  rejectBooking, updateClassRow, updateStudioRow,
+  rejectBooking, softDeleteClass, updateClassRow, updateStudioRow,
 } from "@/lib/server/data";
+import { getBranch } from "@/lib/server/branches";
 import { notifyBookingConfirmed } from "@/lib/server/notify";
 import { ApiError } from "@/lib/errors";
 import type { BookingStatus } from "@/lib/types";
@@ -53,16 +54,24 @@ export async function listSessionParticipants(sessionId: string): Promise<Approv
   assertBranchAccess(user, session.branch.id);
   return listBookingsBySession(sessionId);
 }
-export async function searchCustomerBookings(search: string): Promise<ApprovalRow[]> {
+async function historyBranch(user: CurrentUser, requested: string | null | undefined): Promise<string | null> {
+  if (user.role === "admin") return user.branch_id;
+  if (!requested) return null;
+  const branch = await getBranch(requested);
+  if (branch.deleted_at) throw new ApiError(404, "Cabang tidak ditemukan", "BRANCH_NOT_FOUND");
+  return branch.id;
+}
+
+export async function searchCustomerBookings(search: string, branchFilter?: string | null): Promise<ApprovalRow[]> {
   const user = await assertAdmin();
   if (search.trim().length < 3) {
     throw new ApiError(400, "Masukkan minimal 3 karakter", "VALIDATION_ERROR");
   }
-  return listCustomerBookings(search, scopeBranch(user));
+  return listCustomerBookings(search, await historyBranch(user, branchFilter));
 }
-export async function listRecentBookings(limit = 20): Promise<ApprovalRow[]> {
+export async function listRecentBookings(limit = 20, branchFilter?: string | null): Promise<ApprovalRow[]> {
   const user = await assertAdmin();
-  return loadRecentBookings(limit, scopeBranch(user));
+  return loadRecentBookings(limit, await historyBranch(user, branchFilter));
 }
 export async function listSessionsByDate(startISO: string, endISO: string): Promise<PublicSession[]> {
   const user = await assertAdmin();
@@ -129,6 +138,12 @@ export async function updateClass(id: string, input: ClassInput): Promise<Class>
   const user = await assertAdmin();
   assertBranchAccess(user, await classBranchId(id));
   return updateClassRow(id, input);
+}
+
+export async function deleteClass(id: string): Promise<void> {
+  const user = await assertAdmin();
+  assertBranchAccess(user, await classBranchId(id));
+  return softDeleteClass(id);
 }
 
 export async function updateStudio(input: Pick<Studio, "name" | "wa_number" | "bank_info">): Promise<Studio> {

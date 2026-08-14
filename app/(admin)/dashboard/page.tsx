@@ -33,7 +33,7 @@ export default function DashboardPage() {
     <div className="mx-auto max-w-6xl space-y-10">
       <header className="space-y-2">
         <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-cypress">Overview</p>
-        <h2 className="font-display text-4xl tracking-tight lg:text-5xl">Halo, Admin 👋</h2>
+        <h2 className="font-display text-4xl tracking-tight lg:text-5xl">Halo, Admin</h2>
         <p className="max-w-prose text-sm text-ink/55">Ringkasan studio hari ini. Kelola persetujuan pembayaran dan jadwal kelas dari sini.</p>
       </header>
 

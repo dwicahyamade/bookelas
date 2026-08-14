@@ -22,10 +22,11 @@ type ClassFormValues = z.infer<typeof classSchema>;
 
 const EMPTY: ClassFormValues = { title: "", description: "", capacity: 10, price: 150000 };
 
-export function ClassDialog({ open, editing, branchId, branches, isSuperadmin, onClose }: {
+export function ClassDialog({ open, editing, branchId, branchName, branches, isSuperadmin, onClose }: {
   open: boolean;
   editing: ClassInput & { id: string } | null;
   branchId?: string | null;
+  branchName?: string;
   branches: Branch[];
   isSuperadmin: boolean;
   onClose: () => void;
@@ -57,7 +58,7 @@ export function ClassDialog({ open, editing, branchId, branches, isSuperadmin, o
           <Field id="title" label="Judul kelas" error={errors.title?.message} required><input id="title" disabled={isSubmitting} {...register("title")} className="ui-input" /></Field>
           <Field id="description" label="Deskripsi" error={errors.description?.message}><textarea id="description" rows={3} disabled={isSubmitting} {...register("description")} className="ui-input resize-none" /></Field>
           <div className="grid grid-cols-2 gap-3"><Field id="capacity" label="Kapasitas" error={errors.capacity?.message} required><input id="capacity" type="number" inputMode="numeric" min={1} max={100} disabled={isSubmitting} {...register("capacity")} className="ui-input" /></Field><Field id="price" label="Harga (Rp)" error={errors.price?.message} required><input id="price" type="number" inputMode="numeric" min={0} step={1000} disabled={isSubmitting} {...register("price")} className="ui-input" /></Field></div>
-          {isSuperadmin && !editing && <Field id="class-branch" label="Cabang" required><select id="class-branch" value={selectedBranch} onChange={(e) => setSelectedBranch(e.target.value)} disabled={isSubmitting} className="ui-input"><option value="">Pilih cabang…</option>{branches.filter((b) => b.is_active).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select></Field>}
+          {editing ? <Field id="class-branch" label="Cabang"><input id="class-branch" value={branchName ?? "—"} readOnly className="ui-input bg-ink/[0.03]" /></Field> : isSuperadmin ? <Field id="class-branch" label="Cabang" required><select id="class-branch" value={selectedBranch} onChange={(e) => setSelectedBranch(e.target.value)} disabled={isSubmitting} className="ui-input"><option value="">Pilih cabang…</option>{branches.filter((b) => b.is_active).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select></Field> : <Field id="class-branch" label="Cabang"><input id="class-branch" value={branchName ?? "—"} readOnly className="ui-input bg-ink/[0.03]" /></Field>}
           <button type="submit" disabled={isSubmitting || (isSuperadmin && !editing && !selectedBranch)} className="flex w-full items-center justify-center gap-2 rounded-full bg-cypress px-5 py-3 text-sm font-semibold text-paper hover:bg-cypress/90 disabled:opacity-60">{isSubmitting && <Loader2 className="size-4 animate-spin" />}{editing ? "Simpan perubahan" : "Buat kelas"}</button>
         </form>
       </section>

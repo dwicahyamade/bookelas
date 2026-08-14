@@ -8,7 +8,9 @@ import { ApiError } from "@/lib/errors";
 import type { Booking, CreateBookingInput, PublicSession } from "@/lib/types";
 
 export async function getSessionByToken(token: string): Promise<PublicSession> {
-  return loadSession(token);
+  const pub = await loadSession(token);
+  if (pub.branch.deleted_at || pub.class.deleted_at) throw new ApiError(410, "Sesi tidak tersedia", "SESSION_UNAVAILABLE");
+  return pub;
 }
 
 export async function createBooking(input: CreateBookingInput): Promise<Booking> {
@@ -19,6 +21,7 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
   if (error || !session) throw new ApiError(404, "Sesi tidak ditemukan", "SESSION_NOT_FOUND");
 
   const pub = await computePublicSession(session);
+  if (pub.branch.deleted_at || pub.class.deleted_at) throw new ApiError(409, "Sesi tidak tersedia", "BRANCH_INACTIVE");
   if (!pub.branch.is_active) throw new ApiError(409, "Sesi tidak tersedia", "BRANCH_INACTIVE");
   if (pub.remaining_slots <= 0) throw new ApiError(409, "Kelas sudah penuh", "CLASS_FULL");
 

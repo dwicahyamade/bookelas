@@ -39,6 +39,7 @@ export async function updateAdminUser(id: string, input: AdminUserUpdateInput): 
   const { data, error } = await supabaseAdmin().from("admin_users").update({
     branch_id: input.branch_id,
     is_active: input.is_active,
+    ...(input.password ? { password_hash: hashPassword(input.password) } : {}),
   }).eq("id", id).select("id, username, branch_id, is_active, created_at, updated_at").maybeSingle();
   if (error || !data) throw new ApiError(404, "Admin tidak ditemukan", "ADMIN_NOT_FOUND");
   return data as AdminUser;

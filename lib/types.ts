@@ -14,6 +14,7 @@ export interface Branch {
   name: string;
   slug: string;
   is_active: boolean;
+  deleted_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -25,6 +26,7 @@ export interface Class {
   description: string;
   capacity: number;
   price: number;
+  deleted_at: string | null;
 }
 
 export interface ClassSession {
