@@ -19,6 +19,7 @@ export async function createBooking(input: CreateBookingInput): Promise<Booking>
   if (error || !session) throw new ApiError(404, "Sesi tidak ditemukan", "SESSION_NOT_FOUND");
 
   const pub = await computePublicSession(session);
+  if (!pub.branch.is_active) throw new ApiError(409, "Sesi tidak tersedia", "BRANCH_INACTIVE");
   if (pub.remaining_slots <= 0) throw new ApiError(409, "Kelas sudah penuh", "CLASS_FULL");
 
   const proofUrl = await uploadProof(input.session_id, input.payment_proof);
