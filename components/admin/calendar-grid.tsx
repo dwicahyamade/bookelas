@@ -4,14 +4,15 @@ import { useState } from "react";
 import { Check, Copy, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import type { PublicSession } from "@/lib/types";
-import { getWeekDays, isToday, STUDIO_TZ } from "@/lib/calendar";
+import { getMonthDays, getWeekDays, isSameDay, isToday, STUDIO_TZ } from "@/lib/calendar";
 
 const dayFmt = new Intl.DateTimeFormat("id-ID", { weekday: "short", day: "numeric", timeZone: STUDIO_TZ });
 const timeFmt = new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit", timeZone: STUDIO_TZ });
 
-export function CalendarGrid({ anchor, sessions, isLoading, onAdd, onSelect }: { anchor: string; sessions: PublicSession[]; isLoading: boolean; onAdd: (dateISO: string) => void; onSelect: (session: PublicSession) => void }) {
+export function CalendarGrid({ anchor, view, sessions, isLoading, onAdd, onSelect }: { anchor: string; view: "week" | "month" | "day"; sessions: PublicSession[]; isLoading: boolean; onAdd: (dateISO: string) => void; onSelect: (session: PublicSession) => void }) {
   const [copied, setCopied] = useState<string | null>(null);
-  const days = getWeekDays(anchor);
+  const days = view === "month" ? getMonthDays(anchor) : view === "day" ? [new Date(anchor)] : getWeekDays(anchor);
+  const columns = view === "month" ? "grid-cols-7" : view === "day" ? "grid-cols-1" : "grid-cols-2 sm:grid-cols-4 lg:grid-cols-7";
 
   async function copyLink(s: PublicSession) {
     const url = `${window.location.origin}/b/${s.magic_token}`;
@@ -26,9 +27,9 @@ export function CalendarGrid({ anchor, sessions, isLoading, onAdd, onSelect }: {
   }
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
+    <div className={`grid ${columns} gap-3`}>
       {days.map((day) => {
-        const daySessions = sessions.filter((s) => sameDay(day, new Date(s.start_time)));
+        const daySessions = sessions.filter((s) => isSameDay(day, new Date(s.start_time)));
         return <div key={day.toISOString()} className={`flex min-h-[180px] flex-col rounded-xl border p-3 ${isToday(day) ? "border-cypress bg-cypress/5" : "border-ink/10 bg-white/30"}`}>
           <div className="flex items-center justify-between">
             <span className={`text-[11px] font-bold uppercase tracking-wide ${isToday(day) ? "text-cypress" : "text-ink/45"}`}>{dayFmt.format(day)}</span>
@@ -53,9 +54,6 @@ export function CalendarGrid({ anchor, sessions, isLoading, onAdd, onSelect }: {
   );
 }
 
-function sameDay(a: Date, b: Date) {
-  return new Intl.DateTimeFormat("en-US", { timeZone: STUDIO_TZ, year: "numeric", month: "2-digit", day: "2-digit" }).format(a) === new Intl.DateTimeFormat("en-US", { timeZone: STUDIO_TZ, year: "numeric", month: "2-digit", day: "2-digit" }).format(b);
-}
 
 export function CalendarLoading() {
   return <Loader2 className="size-6 animate-spin text-cypress" aria-label="Memuat kalender" />;

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { getWeekDays, getWeekRange, isSameDay, shiftWeek } from "./calendar.ts";
+import { getDayRange, getMonthDays, getMonthRange, getWeekDays, getWeekRange, isSameDay, shiftDay, shiftMonth, shiftWeek } from "./calendar.ts";
 
 function demo() {
   // 2026-08-12 is a Wednesday; week should start Mon 2026-08-10.
@@ -20,6 +20,13 @@ function demo() {
   const b = new Date("2026-08-15T15:00:00Z");      // same instant, same Makassar day
   assert.equal(isSameDay(a, b), true, "same Makassar day across tz representation");
 
+  const month = getMonthRange("2026-08-12T10:00:00+08:00");
+  assert.equal(month.start.getUTCDate(), 1, "month starts on day one");
+  assert.equal(getMonthDays("2026-08-12T10:00:00+08:00").length, 42, "month has six weeks");
+  const day = getDayRange("2026-08-12T10:00:00+08:00");
+  assert.equal(day.end.getUTCHours(), 23, "day ends at 23:00 UTC representation");
+  assert.equal(isSameDay(new Date(shiftDay("2026-08-12T10:00:00+08:00", 1)), new Date("2026-08-13T00:00:00Z")), true, "shiftDay advances one day");
+  assert.equal(new Date(shiftMonth("2026-08-12T10:00:00+08:00", 1)).getUTCMonth(), 8, "shiftMonth advances one month");
   console.log("calendar.self-check: OK");
 }
 

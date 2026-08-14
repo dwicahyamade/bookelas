@@ -36,9 +36,10 @@ export function ApprovalDialog({ row, onClose, onDecision, busy }: { row: Approv
 
         <dl className="mt-5 grid grid-cols-2 gap-4 border-y border-ink/10 py-4 text-sm">
           <div><dt className="text-xs text-ink/45">Kelas</dt><dd className="mt-1 font-semibold">{row.session.class.title}</dd></div>
+          <div><dt className="text-xs text-ink/45">Cabang</dt><dd className="mt-1 font-semibold">{row.session.branch.name}</dd></div>
           <div><dt className="text-xs text-ink/45">Kontak</dt><dd className="mt-1 font-semibold">{row.customer_wa}</dd></div>
           <div><dt className="text-xs text-ink/45">Email</dt><dd className="mt-1 break-all font-semibold">{row.customer_email}</dd></div>
-          <div><dt className="text-xs text-ink/45">File</dt><dd className="mt-1 font-mono text-xs">{row.payment_proof_url.split("/").pop()}</dd></div>
+          <div><dt className="text-xs text-ink/45">File</dt><dd className="mt-1 font-mono text-xs break-words">{row.payment_proof_url.split("/").pop()}</dd></div>
         </dl>
 
         <div className="mt-6 grid grid-cols-2 gap-3">

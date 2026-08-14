@@ -44,7 +44,7 @@ export function SessionSummary({ session }: { session: PublicSession }) {
       <div className="grid gap-3 border-y border-ink/15 py-5 text-sm sm:grid-cols-2">
         <p className="flex items-start gap-3"><CalendarDays className="mt-0.5 size-4 text-cypress" aria-hidden="true" /><span>{formatSessionDate(session.start_time)}</span></p>
         <p className="flex items-start gap-3"><Clock3 className="mt-0.5 size-4 text-cypress" aria-hidden="true" /><span>{formatSessionTime(session.start_time, session.end_time)}</span></p>
-        <p className="flex items-start gap-3"><MapPin className="mt-0.5 size-4 text-cypress" aria-hidden="true" /><span>Zenith Studio, Studio A</span></p>
+        <p className="flex items-start gap-3"><MapPin className="mt-0.5 size-4 text-cypress" aria-hidden="true" /><span>{session.branch.name}</span></p>
         <p className="flex items-start gap-3"><span className="mt-0.5 font-semibold text-cypress" aria-hidden="true">Rp</span><span>{priceFormatter.format(session.class.price)}</span></p>
       </div>
 
