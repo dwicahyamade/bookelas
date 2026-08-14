@@ -1,24 +1,37 @@
 import assert from "node:assert/strict";
-import { createHmac } from "node:crypto";
-import { signToken, verifyToken, timingSafeEqualString } from "./auth-token.ts";
+import { signToken, verifyToken, timingSafeEqualString, type SessionClaims } from "./auth-token.ts";
 
 function demo() {
   process.env.AUTH_SECRET = "test-secret-at-least-16-chars!!";
   process.env.AUTH_MAX_AGE_SECONDS = "43200";
 
-  const t = signToken();
-  assert.equal(verifyToken(t), true, "valid token verifies");
-  assert.equal(verifyToken(t + "x"), false, "tampered token rejected");
-  assert.equal(verifyToken(undefined), false, "missing token rejected");
-  assert.equal(verifyToken("a.b"), false, "malformed token rejected");
+  const adminClaims: SessionClaims = {
+    user_id: "u1", username: "kasir", role: "admin", branch_id: "b1", exp: Date.now() + 3600_000,
+  };
+  const superClaims: SessionClaims = {
+    user_id: "s1", username: "superadmin", role: "superadmin", branch_id: null, exp: Date.now() + 3600_000,
+  };
 
-  // Expiry: same payload format as auth.ts, but with a past exp.
-  const expiredPayload = `${Date.now() - 1000}.abc`;
-  const expired = `${Buffer.from(expiredPayload).toString("base64url")}.${createHmac("sha256", process.env.AUTH_SECRET).update(expiredPayload).digest("base64url")}`;
-  assert.equal(verifyToken(expired), false, "expired token rejected");
+  const ta = signToken(adminClaims);
+  const parsed = verifyToken(ta);
+  assert.ok(parsed, "admin token parses");
+  assert.equal(parsed.role, "admin", "role admin");
+  assert.equal(parsed.branch_id, "b1", "branch_id preserved");
+  assert.equal(parsed.username, "kasir", "username preserved");
 
-  assert.equal(timingSafeEqualString("abc", "abc"), true, "timingSafeEqualString equal");
-  assert.equal(timingSafeEqualString("abc", "abd"), false, "timingSafeEqualString not equal");
+  const ts = signToken(superClaims);
+  const ps = verifyToken(ts);
+  assert.ok(ps, "superadmin token parses");
+  assert.equal(ps.role, "superadmin", "role superadmin");
+  assert.equal(ps.branch_id, null, "superadmin branch null");
+
+  assert.equal(verifyToken(ts + "x"), null, "tampered rejected");
+  assert.equal(verifyToken(undefined), null, "missing rejected");
+  assert.equal(verifyToken("a.b"), null, "malformed rejected");
+  assert.equal(verifyToken(signToken({ ...adminClaims, exp: Date.now() - 1000 })), null, "expired rejected");
+
+  assert.equal(timingSafeEqualString("abc", "abc"), true, "timingSafe equal");
+  assert.equal(timingSafeEqualString("abc", "abd"), false, "timingSafe not equal");
   console.log("auth.self-check: OK");
 }
 
