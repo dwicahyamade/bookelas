@@ -35,7 +35,9 @@ export function getMonthRange(anchorISO: string): { start: Date; end: Date } {
 export function getMonthDays(anchorISO: string): Date[] {
   const { start } = getMonthRange(anchorISO);
   const first = startOfWeekLocal(start);
-  return Array.from({ length: 42 }, (_, i) => {
+  const daysInMonth = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 0)).getUTCDate();
+  const rowCount = Math.ceil(((start.getUTCDay() + 6) % 7 + daysInMonth) / 7);
+  return Array.from({ length: rowCount * 7 }, (_, i) => {
     const day = new Date(first);
     day.setUTCDate(first.getUTCDate() + i);
     return day;
