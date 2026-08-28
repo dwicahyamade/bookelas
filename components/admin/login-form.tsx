@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { login } from "@/lib/api/auth";
-import { apiMessage } from "@/lib/errors";
 import { Field } from "@/components/ui/field";
 
 export function LoginForm() {
@@ -18,14 +17,14 @@ export function LoginForm() {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    try {
-      await login(username, password);
-      router.replace("/dashboard");
-      router.refresh();
-    } catch (err) {
-      setError(apiMessage(err, "Gagal masuk"));
+    const result = await login(username, password);
+    if (!result.ok) {
+      setError(result.message);
       setBusy(false);
+      return;
     }
+    router.replace("/dashboard");
+    router.refresh();
   }
 
   return (
