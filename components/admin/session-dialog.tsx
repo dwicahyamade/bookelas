@@ -15,7 +15,8 @@ const sessionSchema = z.object({
   class_id: z.string().min(1, "Pilih kelas"),
   date: z.string().min(1, "Pilih tanggal"),
   start: z.string().min(1, "Isi waktu mulai"),
-  end: z.string().min(1, "Isi waktu selesai")
+  end: z.string().min(1, "Isi waktu selesai"),
+  coach: z.string().max(120, "Nama coach terlalu panjang")
 }).refine((v) => v.end > v.start, { path: ["end"], message: "Waktu selesai harus setelah waktu mulai" });
 
 export function SessionDialog({ open, onClose, initialDate }: { open: boolean; onClose: () => void; initialDate?: string }) {
@@ -24,7 +25,7 @@ export function SessionDialog({ open, onClose, initialDate }: { open: boolean; o
   const queryClient = useQueryClient();
   const { data: classes } = useQuery({ queryKey: ["classes"], queryFn: listClasses, enabled: open });
   const { data: branches = [] } = useQuery({ queryKey: ["branches"], queryFn: () => listAllBranches(true), enabled: open });
-  const [form, setForm] = useState({ branch_id: user.branch_id ?? "", class_id: "", date: initialDate ?? "", start: "09:00", end: "10:00" });
+  const [form, setForm] = useState({ branch_id: user.branch_id ?? "", class_id: "", date: initialDate ?? "", start: "09:00", end: "10:00", coach: "" });
   const filteredClasses = classes?.filter((item) => item.branch_id === form.branch_id);
   const [errors, setErrors] = useState<Record<string, string>>({});
   useEffect(() => {
@@ -36,7 +37,7 @@ export function SessionDialog({ open, onClose, initialDate }: { open: boolean; o
       toast.success("Sesi berhasil dibuat");
       void queryClient.invalidateQueries({ queryKey: ["calendar"] });
       onClose();
-      setForm({ branch_id: user.branch_id ?? "", class_id: "", date: initialDate ?? "", start: "09:00", end: "10:00" });
+      setForm({ branch_id: user.branch_id ?? "", class_id: "", date: initialDate ?? "", start: "09:00", end: "10:00", coach: "" });
       window.setTimeout(() => toast(`Magic link siap: /b/${session.magic_token}`, { duration: 8000 }), 150);
     },
     onError: (e) => toast.error(apiMessage(e, "Gagal membuat sesi"))
@@ -55,7 +56,7 @@ export function SessionDialog({ open, onClose, initialDate }: { open: boolean; o
       return;
     }
     // Local adapter uses +08:00, matching the studio's Asia/Makassar display.
-    mutation.mutate({ class_id: form.class_id, start_time: `${form.date}T${form.start}:00+08:00`, end_time: `${form.date}T${form.end}:00+08:00` });
+    mutation.mutate({ class_id: form.class_id, start_time: `${form.date}T${form.start}:00+08:00`, end_time: `${form.date}T${form.end}:00+08:00`, coach: form.coach.trim() || null });
   }
 
   return (
@@ -65,6 +66,7 @@ export function SessionDialog({ open, onClose, initialDate }: { open: boolean; o
         <div className="mt-6 space-y-4">
           <label className="block space-y-2 text-sm font-semibold">Cabang{isSuperadmin ? <select value={form.branch_id} onChange={(e) => update("branch_id", e.target.value)} className="ui-input mt-2" disabled={mutation.isPending}><option value="">Pilih cabang…</option>{branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</select> : <input value={branches.find((b) => b.id === form.branch_id)?.name ?? "—"} readOnly className="ui-input mt-2 bg-ink/[0.03]" />}{errors.branch_id && <span className="block text-xs font-normal text-ochre">{errors.branch_id}</span>}</label>
           <label className="block space-y-2 text-sm font-semibold">Kelas<select value={form.class_id} onChange={(e) => update("class_id", e.target.value)} className="ui-input mt-2" disabled={mutation.isPending || !form.branch_id}><option value="">Pilih kelas…</option>{filteredClasses?.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}</select>{errors.class_id && <span className="block text-xs font-normal text-ochre">{errors.class_id}</span>}</label>
+          <label className="block space-y-2 text-sm font-semibold">Coach<input value={form.coach} onChange={(e) => update("coach", e.target.value)} className="ui-input mt-2" disabled={mutation.isPending} />{errors.coach && <span className="block text-xs font-normal text-ochre">{errors.coach}</span>}</label>
           <label className="block space-y-2 text-sm font-semibold">Tanggal<input type="date" value={form.date} onChange={(e) => update("date", e.target.value)} className="ui-input mt-2" disabled={mutation.isPending} />{errors.date && <span className="block text-xs font-normal text-ochre">{errors.date}</span>}</label>
           <div className="grid grid-cols-2 gap-3"><label className="block space-y-2 text-sm font-semibold">Mulai<input type="time" value={form.start} onChange={(e) => update("start", e.target.value)} className="ui-input mt-2" disabled={mutation.isPending} />{errors.start && <span className="block text-xs font-normal text-ochre">{errors.start}</span>}</label><label className="block space-y-2 text-sm font-semibold">Selesai<input type="time" value={form.end} onChange={(e) => update("end", e.target.value)} className="ui-input mt-2" disabled={mutation.isPending} />{errors.end && <span className="block text-xs font-normal text-ochre">{errors.end}</span>}</label></div>
         </div>

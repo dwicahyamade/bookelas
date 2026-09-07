@@ -1,7 +1,7 @@
 import type { AdminUser, Booking, BookingStatus, Branch, Class, PublicSession, SessionStatus, Studio, UserRole } from "@/lib/types";
 
 export interface ApprovalRow extends Booking { session: PublicSession; }
-export interface CreateSessionInput { class_id: string; start_time: string; end_time: string; }
+export interface CreateSessionInput { class_id: string; coach: string | null; start_time: string; end_time: string; }
 export interface ClassInput { title: string; description: string; capacity: number; price: number; }
 export interface DashboardMetrics {
   pendingCount: number; approvedTodayCount: number; sessionsTodayCount: number;
