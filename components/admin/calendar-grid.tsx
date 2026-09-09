@@ -41,6 +41,7 @@ export function CalendarGrid({ anchor, view, sessions, isLoading, onAdd, onSelec
               return <div role="button" tabIndex={0} onClick={() => onSelect(s)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(s); } }} key={s.id} className="block w-full rounded-lg bg-paper p-2 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cypress">
                 <p className="tabular text-[11px] font-semibold text-ink/55">{timeFmt.format(new Date(s.start_time))}</p>
                 <p className="mt-0.5 line-clamp-2 text-xs font-semibold leading-tight">{s.class.title}</p>
+                {s.coach && <p className="mt-1 text-[10px] text-ink/55">Coach: {s.coach}</p>}
                 <div className="mt-1.5 flex items-center justify-between">
                   <span className={`text-[10px] font-bold ${full ? "text-ochre" : "text-cypress"}`}>{s.approved_count}/{s.class.capacity}{full ? " · PENUH" : ""}</span>
                   <button type="button" onClick={(e) => { e.stopPropagation(); void copyLink(s); }} aria-label="Salin magic link" className="rounded p-1 text-cypress hover:bg-cypress/10">{copied === s.id ? <Check className="size-3" /> : <Copy className="size-3" />}</button>

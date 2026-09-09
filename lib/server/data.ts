@@ -213,7 +213,7 @@ export async function createSessionRow(input: CreateSessionInput): Promise<Publi
   const { data: cls } = await sb.from("classes").select("id, deleted_at").eq("id", input.class_id).maybeSingle();
   if (!cls || cls.deleted_at) throw new ApiError(404, "Kelas tidak ditemukan", "CLASS_NOT_FOUND");
   const { data, error } = await sb.from("class_sessions").insert({
-    class_id: input.class_id, start_time: input.start_time, end_time: input.end_time, status: "SCHEDULED",
+    class_id: input.class_id, coach: input.coach, start_time: input.start_time, end_time: input.end_time, status: "SCHEDULED",
   }).select().single();
   if (error) {
     if ((error as { code?: string }).code === "P0003") throw new ApiError(409, "Cabang nonaktif", "BRANCH_INACTIVE");

@@ -32,6 +32,7 @@ export interface Class {
 export interface ClassSession {
   id: string;
   class_id: string;
+  coach: string | null;
   start_time: string;
   end_time: string;
   magic_token: string;

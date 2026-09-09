@@ -37,7 +37,7 @@ export function SessionDetailDialog({ session, onClose }: { session: PublicSessi
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/45 p-0 sm:items-center sm:p-6" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !cancelMutation.isPending) onClose(); }}>
       <section role="dialog" aria-modal="true" aria-labelledby="session-detail-title" className="max-h-[92dvh] w-full max-w-3xl overflow-y-auto rounded-t-2xl bg-paper p-5 shadow-2xl sm:rounded-2xl sm:p-7">
         <div className="flex items-start justify-between gap-4">
-          <div><p className="text-[11px] font-bold uppercase tracking-[0.2em] text-cypress">Detail sesi</p><h2 id="session-detail-title" className="mt-1 font-display text-3xl tracking-tight">{session.class.title}</h2><p className="mt-2 text-sm text-ink/55">{session.branch.name} · {dateFmt.format(new Date(session.start_time))} · {timeFmt.format(new Date(session.start_time))}–{timeFmt.format(new Date(session.end_time))} WITA</p></div>
+          <div><p className="text-[11px] font-bold uppercase tracking-[0.2em] text-cypress">Detail sesi</p><h2 id="session-detail-title" className="mt-1 font-display text-3xl tracking-tight">{session.class.title}</h2><p className="mt-2 text-sm text-ink/55">{session.branch.name} · {dateFmt.format(new Date(session.start_time))} · {timeFmt.format(new Date(session.start_time))}–{timeFmt.format(new Date(session.end_time))} WITA</p>{session.coach && <p className="mt-1 text-sm text-ink/55">Coach: {session.coach}</p>}</div>
           <button type="button" onClick={onClose} aria-label="Tutup detail sesi" className="rounded-lg p-2 text-ink/50 hover:bg-ink/5 hover:text-ink"><X className="size-5" /></button>
         </div>
 

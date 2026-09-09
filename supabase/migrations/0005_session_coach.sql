@@ -1,0 +1,1 @@
+alter table class_sessions add column if not exists coach text;
